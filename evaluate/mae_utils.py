@@ -101,7 +101,7 @@ PURPLE = (0x44, 0x01, 0x54)
 YELLOW = (0xFD, 0xE7, 0x25)
 
 
-def prepare_model(chkpt_dir, arch='mae_vit_large_patch16', device='cuda'):
+def prepare_model(chkpt_dir, arch='mae_vit_large_patch16', device='cpu'):
     # build model
     model = getattr(models_mae, arch)()
     # load model
@@ -109,7 +109,6 @@ def prepare_model(chkpt_dir, arch='mae_vit_large_patch16', device='cuda'):
     msg = model.load_state_dict(checkpoint['model'], strict=False)
     print(msg)
     model.to(device)
-    print(device)
     return model
 
 
