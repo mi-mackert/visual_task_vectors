@@ -98,8 +98,8 @@ def evaluate(args):
     model = prepare_model(args.ckpt, arch=args.model)
     _ = model.to(args.device)
     # tasks = ["segmentation", "lowlight_enhance", "identity", "inpaint", "colorization"] # PASCAL Tasks original
-    # tasks = ["depth_estimation"] # NYU Depth v2 tasks
-    tasks = ["segmentation"] # ISIC tasks
+    tasks = ["depth_estimation"] # NYU Depth v2 tasks
+    # tasks = ["segmentation"] # ISIC tasks
     if not os.path.exists(os.path.join(args.output_dir, 'filtered_pairs.pkl')):
 
         query_pair_list = {}
@@ -112,8 +112,8 @@ def evaluate(args):
         #for split in [1, 2, 3]:
             # ds = multitask_dataloader.NYU(args.base_dir, fold=split, image_transform=image_transform, mask_transform=mask_transform,
             #                  flipped_order=args.flip, purple=args.purple, iters=1000, type="trn") # original Pascal 
-            # ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, type="train") # NYU Depth v2
-        ds = ISICDataset(type="train", image_transform=image_transform, mask_transform=mask_transform)
+        ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, type="train") # NYU Depth v2
+        # ds = ISICDataset(type="train", image_transform=image_transform, mask_transform=mask_transform)
         for idx in trange(len(ds)):
           canvas = ds[idx]['grid']
           q_name = ds[idx]['query_name']
@@ -124,7 +124,7 @@ def evaluate(args):
             original_image, generated_result, _ = _generate_result_for_canvas(args, model, curr_canvas, collect_activations=False)
             
             if i == 0:
-              metric = iou(original_image, generated_result)
+              metric = rmse(original_image, generated_result) # Swap metric for fitting dataset
             else:
               metric = rmse(original_image, generated_result)
             
@@ -174,13 +174,13 @@ def evaluate(args):
 
         query_pairs = data[task]["query_pair_list"]
         metrics = data[task]["metric_list"]
-        ranked_pairs = sorted(zip(query_pairs, metrics), key=lambda x: x[1], reverse=True if task_idx==0 else False) # CHANGE REVERSE IF TASK ISNT SEGMENTATION!
+        ranked_pairs = sorted(zip(query_pairs, metrics), key=lambda x: x[1], reverse=False if task_idx==0 else False) # CHANGE REVERSE IF TASK ISNT SEGMENTATION!
         top_query_pairs = [pair[0] for pair in ranked_pairs[:args.num_collections]]
 
         # ds = multitask_dataloader.DatasetNYU(args.base_dir, fold=args.split, image_transform=image_transform, mask_transform=mask_transform,
         #                  flipped_order=args.flip, purple=args.purple, query_support_list=top_query_pairs, iters=args.iters, type="trn", task=task_idx)
-        # ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
-        ds = ISICDataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
+        ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
+        # ds = ISICDataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
 
         for idx in trange(len(ds)):
             canvas = ds[idx]['grid']
