@@ -41,17 +41,17 @@ class MVTecDataset(Dataset):
         support_image = Image.open(support_path)
 
         if self.task == 0:
-            label_path = os.path.join(self.label_dir)
+            label_path = os.path.join(self.label_dir, img_name)
             label = Image.open(label_path)
-            support_label_path = os.path.join(self.label_dir)
+            support_label_path = os.path.join(self.label_dir, support_name)
             support_mask = Image.open(support_label_path)
             grid = self.segmentation_grid(support_image, support_mask, image, label)
 
         if self.task == None:
             grid = []
-            label_path = os.path.join(self.label_dir)
+            label_path = os.path.join(self.label_dir, img_name)
             label = Image.open(label_path)
-            support_label_path = os.path.join(self.label_dir)
+            support_label_path = os.path.join(self.label_dir, support_name)
             support_mask = Image.open(support_label_path)
             grid.append(self.segmentation_grid(support_image, support_mask, image, label))
             
