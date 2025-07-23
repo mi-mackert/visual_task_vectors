@@ -3,6 +3,7 @@ from tqdm import trange
 import multitask_dataloader
 from nyu_dataloader import NYUDepthV2Dataset
 from isic_dataloader import ISICDataset
+from mvtec_dataloader import MVTecDataset
 from reasoning_dataloader import *
 import torchvision
 from mae_utils import *
@@ -154,8 +155,8 @@ class JointModel(nn.Module):
             if args.task is None:
                 loss = self.loss_iou(original_image, generated_result).item()
             elif args.task == 0 or args.task == 6:
-                # loss = self.loss_iou(original_image, generated_result).item()
-                loss = self.loss_rmse(original_image, generated_result)
+                loss = self.loss_iou(original_image, generated_result).item()
+                # loss = self.loss_rmse(original_image, generated_result)
             else:
                 loss = self.loss_mse(original_image, generated_result)
             loss_holder.append(loss)
@@ -232,8 +233,8 @@ def evaluate(args):
     _ = model.to(args.device)
 
     # tasks = ["segmentation", "lowlight_enhance", "identity", "inpaint", "colorization"] # Pascal 5i tasks
-    tasks = ["depth_estimation"] # NYU tasks
-    # tasks = ["segmentation"]
+    # tasks = ["depth_estimation"] # NYU tasks
+    tasks = ["segmentation"]
 
     if args.task is not None:
         task = tasks[args.task]
@@ -271,9 +272,9 @@ def evaluate(args):
     #     args.split = split
     # eval_ds = multitask_dataloader.DatasetNYU(args.base_dir, fold=split, image_transform=image_transform, mask_transform=mask_transform,
     #                   flipped_order=args.flip, purple=args.purple, iters=args.eval_iters, type="val", task= args.task if args.task is not None else 0)
-    eval_ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, task=args.task, type="test")
+    # eval_ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, task=args.task, type="test")
     # eval_ds = ISICDataset(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
-    
+    eval_ds = MVTecDataSet(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
     rl_model = JointModel(args, model, params, eval_ds, injection, args.load_model)
     rl_model = rl_model.to(args.device)
 
