@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import numpy as np
 import torch.nn.functional as F
+import torchvision.transforms.functional as TF
 
 class MVTecDataset(Dataset):
     def __init__(self, root_dir: str = "/content/drive/MyDrive/BachelorArbeit/Datasets_VAT/mvtec/flattened_mvtec", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None,):
@@ -37,8 +38,11 @@ class MVTecDataset(Dataset):
 
         img_path = os.path.join(self.image_dir, img_name)
         support_path = os.path.join(self.image_dir, support_name)
-        image = Image.open(img_path)
-        support_image = Image.open(support_path)
+        image_s = self.load_mask(img_path)
+        image = TF.to_pil_image(image_s.squeeze(0))
+        support_image_s = self.load_mask(support_path)
+        support_image = TF.to_pil_image(support_image_s.squeeze(0))
+
 
         if self.task == 0:
             label_path = os.path.join(self.label_dir, img_name)
