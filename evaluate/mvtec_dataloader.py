@@ -102,5 +102,5 @@ class MVTecDataset(Dataset):
     
     def load_mask(self, path):
         mask = Image.open(path).convert('L')  # Grayscale, preserves 8-bit class labels
-        mask_np = np.array(mask).astype(np.int64)  # Convert to int64 for class indices
+        mask_np = np.array(mask).astype(np.int32)  # Convert to int64 for class indices
         return torch.from_numpy(mask_np).unsqueeze(0)  # Shape: [1, H, W]
