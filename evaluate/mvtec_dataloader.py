@@ -43,17 +43,21 @@ class MVTecDataset(Dataset):
         if self.task == 0:
             label_path = os.path.join(self.label_dir, img_name)
             label = self.load_mask(label_path)
+            label_pil = TF.to_pil_image(label.squeeze(0))
             support_label_path = os.path.join(self.label_dir, support_name)
             support_mask = self.load_mask(support_label_path)
-            grid = self.segmentation_grid(support_image, support_mask, image, label)
+            support_pil = TF.to_pil_image(support_mask.squeeze(0))
+            grid = self.segmentation_grid(support_image, support_pil, image, label_pil)
 
         if self.task == None:
             grid = []
             label_path = os.path.join(self.label_dir, img_name)
             label = self.load_mask(label_path)
+            label_pil = TF.to_pil_image(label.squeeze(0))
             support_label_path = os.path.join(self.label_dir, support_name)
             support_mask = self.load_mask(support_label_path)
-            grid.append(self.segmentation_grid(support_image, support_mask, image, label))
+            support_pil = TF.to_pil_image(support_mask.squeeze(0))
+            grid.append(self.segmentation_grid(support_image, support_pil, image, label_pil))
             
         batch = {'query_name': img_name, 'support_name': support_name, 'grid': grid}
         return batch
