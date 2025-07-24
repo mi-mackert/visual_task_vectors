@@ -42,17 +42,17 @@ class MVTecDataset(Dataset):
 
         if self.task == 0:
             label_path = os.path.join(self.label_dir, img_name)
-            label = Image.open(label_path)
+            label = self.load_mask(label_path)
             support_label_path = os.path.join(self.label_dir, support_name)
-            support_mask = Image.open(support_label_path)
+            support_mask = self.load_mask(support_label_path)
             grid = self.segmentation_grid(support_image, support_mask, image, label)
 
         if self.task == None:
             grid = []
             label_path = os.path.join(self.label_dir, img_name)
-            label = Image.open(label_path)
+            label = self.load_mask(label_path)
             support_label_path = os.path.join(self.label_dir, support_name)
-            support_mask = Image.open(support_label_path)
+            support_mask = self.load_mask(support_label_path)
             grid.append(self.segmentation_grid(support_image, support_mask, image, label))
             
         batch = {'query_name': img_name, 'support_name': support_name, 'grid': grid}
@@ -91,3 +91,8 @@ class MVTecDataset(Dataset):
             canvas[:, -query_img.shape[1]:, -support_img.shape[2]:] = query_mask
 
         return canvas
+    
+    def load_mask(self, path):
+        mask = Image.open(path).convert('L')  # Grayscale, preserves 8-bit class labels
+        mask_np = np.array(mask).astype(np.int64)  # Convert to int64 for class indices
+        return torch.from_numpy(mask_np).unsqueeze(0)  # Shape: [1, H, W]
