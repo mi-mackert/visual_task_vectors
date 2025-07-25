@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import scipy.io as sio
 
 class BSDDataset(Dataset):
-    def __init__(self, root_dir: str = "/content/Datasets_VAT/BSD500", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None,):
+    def __init__(self, root_dir: str = "/content/Datasets_VAT/BSDS500", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None,):
         self.task = task
         self.root_dir = root_dir
         self.type = type
@@ -17,8 +17,8 @@ class BSDDataset(Dataset):
         self.mask_transform = mask_transform
         self.query_support_pairs = query_support_list
 
-        self.image_dir = os.path.join(root_dir, '/data/images/%s' % (type))
-        self.label_dir = os.path.join(root_dir, '/data/groundTruth/%s' % (type))
+        self.image_dir = os.path.join(root_dir, 'data/images/%s' % (type))
+        self.label_dir = os.path.join(root_dir, 'data/groundTruth/%s' % (type))
 
 
         self.filenames = sorted(os.listdir(self.image_dir))
