@@ -243,7 +243,7 @@ def edge(target, ours):
     preds_edge = torch.sigmoid(ours[0:1])
     target_edge = target[0:1]
     loss = torch.nn.functional.binary_cross_entropy(preds_edge, target_edge)
-    return loss.item()
+    return loss
 
 
 
