@@ -107,6 +107,18 @@ class JointModel(nn.Module):
         rmse = torch.sqrt(torch.mean((target - ours) ** 2))
         return rmse.item()
     
+    def loss_edge(self, target, ours):
+        ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+        target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+        ours = ours[:, 113: 113:]
+        target = target[:, 113:, 113:]
+
+        preds_edge = torch.sigmoid(ours[0:1])
+        target_edge = target[0:1]
+
+        loss = torch.nn.functional.binary_cross_entropy(preds_edge, target_edge)
+        return loss.item()
+    
     def forward(self, args, canvases):
 
         sigmoid_tensor = torch.stack([torch.sigmoid(bernoulli).clamp(min=self.eps, max=1-self.eps) for bernoulli in self.bernoullis])
@@ -137,8 +149,9 @@ class JointModel(nn.Module):
                     original_image, generated_result, _ = _generate_result_for_canvas(args, self.prompting_model, canvas, attention_heads=indices, attention_injection=current_injection)
                 
             if args.task == 0:
-                loss = -1*self.loss_iou(generated_result, original_image) # Segmentation 
+                # loss = -1*self.loss_iou(generated_result, original_image) # Segmentation 
                 # loss = self.loss_rmse(original_image, generated_result) # Depth estimation
+                loss = self.loss_edge(original_image, generated_result)
             else:
                 if args.task is None:
                     if i%len(self.task_tensor) == 0:
