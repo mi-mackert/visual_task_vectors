@@ -38,8 +38,8 @@ class MVTecDataset(Dataset):
 
         img_path = os.path.join(self.image_dir, img_name)
         support_path = os.path.join(self.image_dir, support_name)
-        image = Image.open(img_path)
-        support_image = Image.open(support_path)
+        image = self.load_image(img_path)
+        support_image = self.load_image(support_path)
 
 
         if self.task == 0:
@@ -63,6 +63,14 @@ class MVTecDataset(Dataset):
             
         batch = {'query_name': img_name, 'support_name': support_name, 'grid': grid}
         return batch
+    
+    def load_image(img_path):
+        image = Image.open(img_path)
+
+        # Convert to RGB if not 3 channels
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        return image
     
     def segmentation_grid(self, support_img, support_mask, query_img, query_mask):
         if self.image_transform:
