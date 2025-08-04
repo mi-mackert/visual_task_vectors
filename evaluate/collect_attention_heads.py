@@ -71,6 +71,7 @@ def _generate_result_for_canvas(args, model, canvas, collect_activations=False):
 
     canvas = torch.einsum('chw->hwc', canvas)
     canvas = torch.clip((canvas * imagenet_std + imagenet_mean) * 255, 0, 255).int()
+    
     assert canvas.shape == im_paste.shape, (canvas.shape, im_paste.shape)
     return canvas, im_paste, latents
 
@@ -102,8 +103,8 @@ def evaluate(args):
     # tasks = ["segmentation", "lowlight_enhance", "identity", "inpaint", "colorization"] # PASCAL Tasks original
     # tasks = ["depth_estimation"] # NYU Depth v2 tasks
     # tasks = ["segmentation"] # ISIC tasks
-    # tasks = ["anomaly_detection"] # MVTec simple version
-    tasks = ["edge_detection"] # BSDS500 task
+    tasks = ["anomaly_detection"] # MVTec simple version
+    # tasks = ["edge_detection"] # BSDS500 task
     if not os.path.exists(os.path.join(args.output_dir, 'filtered_pairs.pkl')):
 
         query_pair_list = {}
@@ -118,19 +119,20 @@ def evaluate(args):
             #                  flipped_order=args.flip, purple=args.purple, iters=1000, type="trn") # original Pascal 
         # ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, type="train") # NYU Depth v2
         # ds = ISICDataset(type="train", image_transform=image_transform, mask_transform=mask_transform)
-        # ds = MVTecDataset(type="train", image_transform=image_transform, mask_transform=mask_transform)
-        ds = BSDDataset(type="train", image_transform=image_transform, mask_transform=mask_transform)
+        ds = MVTecDataset(type="train", image_transform=image_transform, mask_transform=mask_transform)
+        # ds = BSDDataset(type="train", image_transform=image_transform, mask_transform=mask_transform)
         for idx in trange(len(ds)):
           canvas = ds[idx]['grid']
           q_name = ds[idx]['query_name']
           s_name = ds[idx]['support_name']
           
           for i in range(len(canvas)):
-            curr_canvas = (canvas[i] - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+            # curr_canvas = (canvas[i] - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+            curr_canvas = (canvas[i] - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
             original_image, generated_result, _ = _generate_result_for_canvas(args, model, curr_canvas, collect_activations=False)
             
             if i == 0:
-              metric = edge(original_image, generated_result) # Swap metric for fitting dataset
+              metric = iou(original_image, generated_result) # Swap metric for fitting dataset
             else:
               metric = rmse(original_image, generated_result)
             
@@ -187,21 +189,24 @@ def evaluate(args):
         #                  flipped_order=args.flip, purple=args.purple, query_support_list=top_query_pairs, iters=args.iters, type="trn", task=task_idx)
         # ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
         # ds = ISICDataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
-        # ds = MVTecDataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
-        ds = BSDDataset(image_transform=image_transform, mask_transform=mask_transform, type="train",query_support_list=top_query_pairs, task=task_idx)
+        ds = MVTecDataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
+        # ds = BSDDataset(image_transform=image_transform, mask_transform=mask_transform, type="train",query_support_list=top_query_pairs, task=task_idx)
         for idx in trange(len(ds)):
             canvas = ds[idx]['grid']
 
-            curr_canvas = (canvas - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+            # curr_canvas = (canvas - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+            curr_canvas = (canvas[i] - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
             original_image, generated_result, latents = _generate_result_for_canvas(args, model, curr_canvas, collect_activations=True)
         
             write_latent(args.output_dir, tasks[task_idx], latents)
 
 
 def mse(target, ours):
-    ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-    target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-
+    # ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+    ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None] # mvtec
+    target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None]
+    # target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+    
     target = target[:, 113:, 113:]
     ours = ours[:, 113:, 113:]
     mse = torch.mean((target - ours) ** 2)
@@ -225,25 +230,16 @@ def iou(original_image, generated_result):
     return iou
 
 def rmse(target, ours):
-    ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-    target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+    # ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+    ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None] # mvtec
+    target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None]
+    # target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
 
     target = target[:, 113:, 113:]
     ours = ours[:, 113:, 113:]
     rmse = torch.sqrt(torch.mean((target - ours) ** 2))
 
     return rmse.item()
-
-def edge(target, ours):
-    ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-    target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-
-    target = target[:, 113:, 113:]
-    ours = ours[:, 113:, 113:]
-    preds_edge = torch.sigmoid(ours[0:1])
-    target_edge = target[0:1]
-    loss = torch.nn.functional.binary_cross_entropy(preds_edge, target_edge)
-    return loss
 
 
 

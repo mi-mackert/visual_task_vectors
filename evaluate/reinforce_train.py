@@ -73,8 +73,10 @@ class JointModel(nn.Module):
         self.task_tensor = task_tensor
 
     def loss_mse(self, target, ours):
-        ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-        target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+        # ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+        # target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+        ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None] # mvtec
+        target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None]
 
         target = target[:, 113:, 113:]
         ours = ours[:, 113:, 113:]
@@ -99,25 +101,15 @@ class JointModel(nn.Module):
         return iou   
 
     def loss_rmse(self, target, ours):
-        ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-        target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+        # ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+        # target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
+        ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None] # mvtec
+        target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None]
 
         target = target[:, 113:, 113:]
         ours = ours[:, 113:, 113:]
         rmse = torch.sqrt(torch.mean((target - ours) ** 2))
         return rmse.item()
-    
-    def loss_edge(self, target, ours):
-        ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-        target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-        ours = ours[:, 113: 113:]
-        target = target[:, 113:, 113:]
-
-        preds_edge = torch.sigmoid(ours[0:1])
-        target_edge = target[0:1]
-
-        loss = torch.nn.functional.binary_cross_entropy(preds_edge, target_edge)
-        return loss.item()
     
     def forward(self, args, canvases):
 
@@ -149,9 +141,8 @@ class JointModel(nn.Module):
                     original_image, generated_result, _ = _generate_result_for_canvas(args, self.prompting_model, canvas, attention_heads=indices, attention_injection=current_injection)
                 
             if args.task == 0:
-                # loss = -1*self.loss_iou(generated_result, original_image) # Segmentation 
+                loss = -1*self.loss_iou(generated_result, original_image) # Segmentation 
                 # loss = self.loss_rmse(original_image, generated_result) # Depth estimation
-                loss = self.loss_edge(original_image, generated_result)
             else:
                 if args.task is None:
                     if i%len(self.task_tensor) == 0:
@@ -184,13 +175,15 @@ class JointModel(nn.Module):
         for idx in range(len(self.train_ds)):
             if args.task is not None:
                 canvas = self.train_ds[idx]['grid']
-                canvas = (canvas - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+                # canvas = (canvas - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+                canvas = (canvas - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
 
                 canvases.append(canvas)
             else:
                 canvas = self.train_ds[idx]['grid']
                 for element in canvas:
-                    element = (element - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+                    # element = (element - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+                    element = (element - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
                     canvases.append(element)
 
         best_checkpoint = float('-inf') if args.task == 0 or args.task is None else float('inf') # SWAP -inf to inf if not segmentation
@@ -280,7 +273,8 @@ class JointModel(nn.Module):
             else:
                 canvas = self.train_ds[idx]['grid'][0]
 
-            canvas = (canvas - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+            # canvas = (canvas - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
+            canvas = (canvas - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
 
             with torch.no_grad():        
                 if args.zero_shot:
@@ -346,7 +340,8 @@ def evaluate(args):
     _ = model.to(args.device)
 
     # tasks = ["depth_estimation"]
-    tasks = ["segmentation"]
+    # tasks = ["segmentation"]
+    tasks = ["anomaly_detection"]
     if args.task is not None:
         task = tasks[args.task]
         mean_activations_file = args.output_dir + '/' + task + '_mean_activations.pkl'

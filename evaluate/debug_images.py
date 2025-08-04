@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from multitask_dataloader import DatasetNYU, DatasetPASCAL  # or wherever your DatasetNYU is
 from nyu_dataloader import NYUDepthV2Dataset
+from mvtec_dataloader import MVTecDataset
 import torch
 import numpy as np
 from torchvision import transforms
@@ -18,7 +19,7 @@ mask_transform = [transforms.Compose(
      transforms.ToTensor()])]
 
 # Instantiate the dataset
-dataset = NYUDepthV2Dataset(type='test', image_transform=image_transform, mask_transform=mask_transform, task=0)
+dataset = MVTecDataset(type='test', image_transform=image_transform, mask_transform=mask_transform, task=0)
 
 
 # Visualize a few samples

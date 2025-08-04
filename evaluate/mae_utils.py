@@ -15,6 +15,9 @@ import models_mae
 imagenet_mean = np.array([0.485, 0.456, 0.406])
 imagenet_std = np.array([0.229, 0.224, 0.225])
 
+mvtec_mean = np.array([0.3265, 0.3065, 0.3006])
+mvtec_std = np.array([0.1685, 0.1649, 0.1578])
+
 
 def fill_to_full(arr):
     new_arr = copy.deepcopy(arr)
