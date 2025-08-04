@@ -64,7 +64,7 @@ class MVTecDataset(Dataset):
         batch = {'query_name': img_name, 'support_name': support_name, 'grid': grid}
         return batch
     
-    def load_image(img_path):
+    def load_image(self, img_path):
         image = Image.open(img_path)
 
         # Convert to RGB if not 3 channels
