@@ -38,10 +38,8 @@ class MVTecDataset(Dataset):
 
         img_path = os.path.join(self.image_dir, img_name)
         support_path = os.path.join(self.image_dir, support_name)
-        image_s = self.load_mask(img_path)
-        image = TF.to_pil_image(image_s.squeeze(0))
-        support_image_s = self.load_mask(support_path)
-        support_image = TF.to_pil_image(support_image_s.squeeze(0))
+        image = Image.open(img_path)
+        support_image = Image.open(support_path)
 
 
         if self.task == 0:
