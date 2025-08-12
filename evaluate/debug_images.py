@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from multitask_dataloader import DatasetNYU, DatasetPASCAL  # or wherever your DatasetNYU is
 from nyu_dataloader import NYUDepthV2Dataset
+from bsd_dataloader import BSDDataset
 from mvtec_dataloader import MVTecDataset
 import torch
 import numpy as np
@@ -19,7 +20,7 @@ mask_transform = [transforms.Compose(
      transforms.ToTensor()])]
 
 # Instantiate the dataset
-dataset = MVTecDataset(type='test', image_transform=image_transform, mask_transform=mask_transform, task=0)
+dataset = BSDDataset(type='test', image_transform=image_transform, mask_transform=mask_transform, task=0)
 
 
 # Visualize a few samples
@@ -32,7 +33,7 @@ for i in range(5):
     plt.imshow(TF.to_pil_image(grid_list))
     plt.title(f"Query: {batch['query_name']} | Support: {batch['support_name']}")
     plt.axis('off')
-    plt.savefig(f"/content/drive/MyDrive/BachelorArbeit/vtv_output/nyu-depth-fixed/debug_images/debug_output_{i:04d}.png")
+    plt.savefig(f"/content/debug_images/debug_output_{i:04d}.png")
 
 
     # print(f"Sample {i}:")
