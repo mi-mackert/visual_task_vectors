@@ -142,8 +142,8 @@ class JointModel(nn.Module):
                     original_image, generated_result, _ = _generate_result_for_canvas(args, self.prompting_model, canvas, attention_heads=indices, attention_injection=current_injection)
                 
             if args.task == 0:
-                # loss = -1*self.loss_iou(generated_result, original_image) # Segmentation 
-                loss = self.loss_rmse(original_image, generated_result) # Depth estimation
+                loss = -1*self.loss_iou(generated_result, original_image) # Segmentation 
+                # loss = self.loss_rmse(original_image, generated_result) # Depth estimation
             else:
                 if args.task is None:
                     if i%len(self.task_tensor) == 0:
@@ -187,7 +187,7 @@ class JointModel(nn.Module):
                     # element = (element - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
                     canvases.append(element)
 
-        best_checkpoint = float('inf') if args.task == 0 or args.task is None else float('inf') # SWAP -inf to inf if not segmentation
+        best_checkpoint = float('-inf') if args.task == 0 or args.task is None else float('inf') # SWAP -inf to inf if not segmentation
         
         for i in trange(num_itr):
             self.optim.zero_grad()
@@ -244,7 +244,7 @@ class JointModel(nn.Module):
                     best_bernoullis_save_path = os.path.join(args.output_dir, f'bernoullis_{args.task}_{args.granularity}_{self.regularization_strength}_{args.restrict_area}_{args.train_images}_{args.lr}_{args.init}_best.pkl')
                     with open(best_bernoullis_save_path, 'wb') as f:
                         pickle.dump([bernoulli.detach().cpu().numpy() for bernoulli in self.bernoullis], f)
-                elif eval_loss < best_checkpoint and (args.task == 0 or args.task is None):
+                elif eval_loss > best_checkpoint and (args.task == 0 or args.task is None):
                     best_checkpoint = eval_loss
                     best_bernoullis_save_path = os.path.join(args.output_dir, f'bernoullis_{args.task}_{args.granularity}_{self.regularization_strength}_{args.restrict_area}_{args.train_images}_{args.lr}_{args.init}_best.pkl')
                     with open(best_bernoullis_save_path, 'wb') as f:
@@ -293,8 +293,8 @@ class JointModel(nn.Module):
             if args.task is None:
                 loss = self.loss_iou(original_image, generated_result).item()
             elif args.task == 0:
-                # loss = self.loss_iou(original_image, generated_result).item()
-                loss = self.loss_rmse(original_image, generated_result)
+                loss = self.loss_iou(original_image, generated_result).item()
+                # loss = self.loss_rmse(original_image, generated_result)
             else:
                 loss = self.loss_mse(original_image, generated_result)
             loss_holder.append(loss)

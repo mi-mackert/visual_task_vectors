@@ -160,8 +160,8 @@ class JointModel(nn.Module):
             if args.task is None:
                 loss = self.loss_iou(original_image, generated_result).item()
             elif args.task == 0 or args.task == 6:
-                # loss = self.loss_iou(original_image, generated_result).item()
-                loss = self.loss_rmse(original_image, generated_result)
+                loss = self.loss_iou(original_image, generated_result).item()
+                # loss = self.loss_rmse(original_image, generated_result)
             else:
                 loss = self.loss_mse(original_image, generated_result)
             loss_holder.append(loss)
