@@ -40,13 +40,6 @@ class NYUDepthV2Dataset(Dataset):
         image = Image.open(img_path)
         support_image = Image.open(support_path)
 
-        if self.task == 1:
-            label_path = os.path.join(self.label_dir, img_name.replace('.jpg', '.png'))
-            label = Image.open(label_path)
-            support_label_path = os.path.join(self.label_dir, support_name.replace('.jpg', '.png'))
-            support_mask = Image.open(support_label_path)
-            grid = self.segmentation_grid(support_image, support_mask, image, label)
-
         if self.task == 0:
             depth_path = os.path.join(self.depth_dir, img_name)
             depth = self.load_depth(depth_path)
@@ -65,17 +58,6 @@ class NYUDepthV2Dataset(Dataset):
         batch = {'query_name': img_name, 'support_name': support_name, 'grid': grid}
         return batch
     
-    def segmentation_grid(self, support_img, support_mask, query_img, query_mask):
-        if self.image_transform:
-            query_img = self.image_transform(query_img)
-            support_img = self.image_transform(support_img)
-        if self.mask_transform:
-            query_mask = self.mask_transform[0](query_mask)
-            support_mask = self.mask_transform[0](support_mask)
-        
-        grid = self.create_grid_from_images_segmentation(support_img, support_mask, query_img, query_mask, flip=False)
-        return grid
-    
 
     def get_support(self, idx):
         query_name = self.filenames[idx]
@@ -84,52 +66,13 @@ class NYUDepthV2Dataset(Dataset):
             if query_name != support_id:
                 break
         return support_id
-
-    def create_grid_from_images_segmentation(self, support_img, support_mask, query_img, query_mask, flip: bool = False):
-        canvas = torch.ones((support_img.shape[0], 2 * support_img.shape[1] + 2 * self.padding, 2 * support_img.shape[2] + 2 * self.padding))
-        canvas[:, :support_img.shape[1], :support_img.shape[2]] = support_img
-        if flip:
-            canvas[:, :support_img.shape[1], -support_img.shape[2]:] = query_img
-            canvas[:, -query_img.shape[1]:, -support_img.shape[2]:] = query_mask
-            canvas[:, -query_img.shape[1]:, :query_img.shape[2]] = support_mask
-        else:
-            canvas[:, -query_img.shape[1]:, :query_img.shape[2]] = query_img
-            canvas[:, :support_img.shape[1], -support_img.shape[2]:] = support_mask
-            canvas[:, -query_img.shape[1]:, -support_img.shape[2]:] = query_mask
-
-        return canvas
     
 
     def load_depth(self, path):
         depth = Image.open(path).convert('I')
         depth_np = np.array(depth).astype(np.float32)
         return torch.from_numpy(depth_np).unsqueeze(0)
-    
 
-    """def depth_grid(self, query_img, support_img, query_mask, support_mask):
-        if self.mask_transform:
-          query_mask = self.mask_transform[0](query_mask)
-          support_mask = self.mask_transform[0](support_mask)
-        if self.image_transform:
-          query_img = self.image_transform(query_img)
-          support_img = self.image_transform(support_img)
-        grid = self.create_grid_from_depth_estimation(support_img, support_mask, query_img, query_mask)
-        
-        return grid"""
-
-    ''' def create_grid_from_depth_estimation(self, support_img, support_mask, query_img, query_mask, flip: bool = False):
-        canvas = torch.ones((support_img.shape[0], 2 * support_img.shape[1] + 2 * self.padding, 2 * support_img.shape[2] + 2 * self.padding))
-        canvas[:, :support_img.shape[1], :support_img.shape[2]] = support_img
-        if flip:
-            canvas[:, :support_img.shape[1], -support_img.shape[2]:] = query_img
-            canvas[:, -query_img.shape[1]:, -support_img.shape[2]:] = query_mask
-            canvas[:, -query_img.shape[1]:, :query_img.shape[2]] = support_mask
-        else:
-            canvas[:, -query_img.shape[1]:, :query_img.shape[2]] = query_img
-            canvas[:, :support_img.shape[1], -support_img.shape[2]:] = support_mask
-            canvas[:, -query_img.shape[1]:, -support_img.shape[2]:] = query_mask
-
-        return canvas '''
 
     def depth_grid(self, query_img, support_img, query_depth, support_depth):
         # Apply transforms to RGB images if defined
