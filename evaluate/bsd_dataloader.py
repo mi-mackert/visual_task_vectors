@@ -87,9 +87,7 @@ class BSDDataset(Dataset):
             mask_struct = mat['groundTruth'][0, 0][field][0, 0]  # common format
         except Exception as e:
             raise ValueError(f"Unexpected .mat structure in {mat_path}: {e}")
-        
-        mask_struct[mask_struct == 1] = 255
-        mask = Image.fromarray(mask_struct.astype(np.int32))
+        mask = Image.fromarray((mask_struct * 255).astype(np.uint8))
         mask = mask.convert("RGB")
         return mask
 
