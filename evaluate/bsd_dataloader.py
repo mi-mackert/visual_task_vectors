@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import scipy.io as sio
 
 class BSDDataset(Dataset):
-    def __init__(self, root_dir: str = "/work/dlclarge1/mackert-MVTec_mm/workspace/BSR/BSDS500", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None,):
+    def __init__(self, root_dir: str = "/content/drive/MyDrive/BachelorArbeit/Datasets_VAT/BSDS500", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None,):
         self.task = task
         self.root_dir = root_dir
         self.type = type
@@ -87,8 +87,10 @@ class BSDDataset(Dataset):
             mask_struct = mat['groundTruth'][0, 0][field][0, 0]  # common format
         except Exception as e:
             raise ValueError(f"Unexpected .mat structure in {mat_path}: {e}")
-        mask = Image.fromarray((mask_struct * 255).astype(np.uint8))
-        mask = mask.convert("RGB")
+        mask_struct[mask_struct == 0] = 0
+        mask_struct[mask_struct == 1] = 255
+        mask = mask_struct.astype(np.int32)
+        mask = Image.fromarray(mask)
         return mask
 
     def create_grid_from_images_segmentation(self, support_img, support_mask, query_img, query_mask, flip: bool = False):

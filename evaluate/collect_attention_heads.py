@@ -71,7 +71,6 @@ def _generate_result_for_canvas(args, model, canvas, collect_activations=False):
 
     canvas = torch.einsum('chw->hwc', canvas)
     canvas = torch.clip((canvas * imagenet_std + imagenet_mean) * 255, 0, 255).int()
-    
     assert canvas.shape == im_paste.shape, (canvas.shape, im_paste.shape)
     return canvas, im_paste, latents
 
@@ -105,6 +104,7 @@ def evaluate(args):
     # tasks = ["segmentation"] # ISIC tasks
     # tasks = ["anomaly_detection"] # MVTec simple version
     tasks = ["edge_detection"] # BSDS500 task
+
     if not os.path.exists(os.path.join(args.output_dir, 'filtered_pairs.pkl')):
 
         query_pair_list = {}
@@ -190,12 +190,13 @@ def evaluate(args):
         # ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
         # ds = ISICDataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
         # ds = MVTecDataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
-        ds = BSDDataset(image_transform=image_transform, mask_transform=mask_transform, type="train",query_support_list=top_query_pairs, task=task_idx)
+
+        ds = BSDDataset(image_transform=image_transform, mask_transform=mask_transform, type="train", query_support_list=top_query_pairs, task=task_idx)
         for idx in trange(len(ds)):
             canvas = ds[idx]['grid']
 
             curr_canvas = (canvas - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
-            # curr_canvas = (canvas[i] - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
+            # curr_canvas = (canvas - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
             original_image, generated_result, latents = _generate_result_for_canvas(args, model, curr_canvas, collect_activations=True)
         
             write_latent(args.output_dir, tasks[task_idx], latents)
