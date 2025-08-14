@@ -337,7 +337,7 @@ def evaluate(args):
     #                       task=args.task)
     # ds = ISICDataset(type="train", image_transform=image_transform, mask_transform=mask_transform, task=args.task)
     # ds = MVTecDataset(type="train", mask_transform=mask_transform, image_transform=image_transform, task=args.task)
-    ds = BSDDataset(type="train", image_transform=image_transform, mask_transform=mask_transform, task=args.task)
+    ds = BSDDataset(type="train", image_transform=image_transform, mask_transform=mask_transform, task=args.task, pkl_path="/content/drive/MyDrive/BachelorArbeit/vtv_output/edge/filtered_pairs.pkl")
     model = prepare_model(args.ckpt, arch=args.model)
     _ = model.to(args.device)
 

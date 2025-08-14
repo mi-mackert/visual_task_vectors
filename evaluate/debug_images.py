@@ -30,6 +30,7 @@ for i in range(5):
     #grid_tensor = torch.cat(grid_list, dim=1)
 
     # Convert to PIL and show
+    plt.figure()
     plt.imshow(TF.to_pil_image(grid_list))
     plt.title(f"Query: {batch['query_name']} | Support: {batch['support_name']}")
     plt.axis('off')

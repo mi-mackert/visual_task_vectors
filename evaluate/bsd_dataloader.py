@@ -6,16 +6,24 @@ from torchvision import transforms
 import numpy as np
 import torch.nn.functional as F
 import scipy.io as sio
+import pickle
 
 class BSDDataset(Dataset):
-    def __init__(self, root_dir: str = "/content/drive/MyDrive/BachelorArbeit/Datasets_VAT/BSDS500", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None,):
+    def __init__(self, root_dir: str = "/content/drive/MyDrive/BachelorArbeit/Datasets_VAT/BSDS500", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None, pkl_path=None):
         self.task = task
         self.root_dir = root_dir
         self.type = type
         self.image_transform = image_transform
         self.padding = padding
         self.mask_transform = mask_transform
-        self.query_support_pairs = query_support_list
+        # Load from pickle if given
+        if pkl_path is not None:
+            with open(pkl_path, "rb") as f:
+                pkl_data = pickle.load(f)
+            # This assumes the structure you posted: {'edge_detection': {'query_pair_list': [...]}}
+            self.query_support_pairs = pkl_data["edge_detection"]["query_pair_list"]
+        else:
+            self.query_support_pairs = query_support_list
 
         self.image_dir = os.path.join(root_dir, 'data/images/%s' % (type))
         self.label_dir = os.path.join(root_dir, 'data/groundTruth/%s' % (type))
@@ -24,8 +32,10 @@ class BSDDataset(Dataset):
         self.filenames = sorted(os.listdir(self.image_dir))
 
     def __len__(self):
+        if self.query_support_pairs is not None:
+            return len(self.query_support_pairs)
         return len(self.filenames)
-
+    
     def __getitem__(self, idx):
         if self.query_support_pairs is not None:
             # Use query and support names from the JSON file
