@@ -128,11 +128,11 @@ def evaluate(args):
           
           for i in range(len(canvas)):
             curr_canvas = (canvas[i] - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
-            # curr_canvas = (canvas[i] - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
             original_image, generated_result, _ = _generate_result_for_canvas(args, model, curr_canvas, collect_activations=False)
             
             if i == 0:
-              metric = iou(original_image, generated_result) # Swap metric for fitting dataset
+              # metric = iou(original_image, generated_result) # Swap metric for fitting dataset
+              metric = rmse(original_image, generated_result)
             else:
               metric = rmse(original_image, generated_result)
             
@@ -182,7 +182,7 @@ def evaluate(args):
 
         query_pairs = data[task]["query_pair_list"]
         metrics = data[task]["metric_list"]
-        ranked_pairs = sorted(zip(query_pairs, metrics), key=lambda x: x[1], reverse=True if task_idx==0 else False) # CHANGE REVERSE IF TASK ISNT SEGMENTATION!
+        ranked_pairs = sorted(zip(query_pairs, metrics), key=lambda x: x[1], reverse=False if task_idx==0 else False) # CHANGE REVERSE IF TASK ISNT SEGMENTATION!
         top_query_pairs = [pair[0] for pair in ranked_pairs[:args.num_collections]]
 
         # ds = multitask_dataloader.DatasetNYU(args.base_dir, fold=args.split, image_transform=image_transform, mask_transform=mask_transform,

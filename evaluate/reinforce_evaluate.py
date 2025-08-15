@@ -67,8 +67,6 @@ class JointModel(nn.Module):
     def loss_mse(self, target, ours):
         ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
         target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-        # ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None] # mvtec
-        # target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None]
 
         target = target[:, 113:, 113:]
         ours = ours[:, 113:, 113:]
@@ -95,8 +93,6 @@ class JointModel(nn.Module):
     def loss_rmse(self, target, ours):
         ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
         target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(imagenet_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(imagenet_std, dtype=torch.float32).to(ours.device)[:, None, None]
-        # ours = (torch.permute(ours / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None] # mvtec
-        # target = (torch.permute(target.to(ours.device) / 255., (2, 0, 1)) - torch.tensor(mvtec_mean, dtype=torch.float32).to(ours.device)[:, None, None]) / torch.tensor(mvtec_std, dtype=torch.float32).to(ours.device)[:, None, None]
 
         target = target[:, 113:, 113:]
         ours = ours[:, 113:, 113:]
@@ -143,7 +139,7 @@ class JointModel(nn.Module):
 
             canvas = self.eval_ds[idx]['grid']
             canvas = (canvas - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
-            # canvas = (canvas - mvtec_mean[:, None, None]) / mvtec_std[:, None, None]
+
             with torch.no_grad():        
                 if args.zero_shot:
                     indices_premask = []
@@ -160,8 +156,8 @@ class JointModel(nn.Module):
             if args.task is None:
                 loss = self.loss_iou(original_image, generated_result).item()
             elif args.task == 0 or args.task == 6:
-                loss = self.loss_iou(original_image, generated_result).item()
-                # loss = self.loss_rmse(original_image, generated_result)
+                # loss = self.loss_iou(original_image, generated_result).item()
+                loss = self.loss_rmse(original_image, generated_result)
             else:
                 loss = self.loss_mse(original_image, generated_result)
             loss_holder.append(loss)
@@ -210,7 +206,7 @@ def _generate_result_for_canvas(args, model, canvas, premask_pass_indices = None
 
     canvas = torch.einsum('chw->hwc', canvas)
     canvas = torch.clip((canvas * imagenet_std + imagenet_mean) * 255, 0, 255).int()
-    # canvas = torch.clip((canvas * mvtec_std + mvtec_mean) * 255, 0, 255).int()
+    
     assert canvas.shape == im_paste.shape, (canvas.shape, im_paste.shape)
     return canvas, im_paste, latents
 

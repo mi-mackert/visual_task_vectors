@@ -9,7 +9,7 @@ import scipy.io as sio
 import pickle
 
 class BSDDataset(Dataset):
-    def __init__(self, root_dir: str = "/content/drive/MyDrive/BachelorArbeit/Datasets_VAT/BSDS500", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None, pkl_path=None):
+    def __init__(self, root_dir: str = "/work/dlclarge1/mackert-MVTec_mm/workspace/BSR/BSDS500", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None, pkl_path=None):
         self.task = task
         self.root_dir = root_dir
         self.type = type
