@@ -36,7 +36,7 @@ def get_args():
     parser.add_argument('--split', default=0 , type=int)
     parser.add_argument('--purple', default=0, type=int)
     parser.add_argument('--flip', default=0, type=int)
-    parser.add_argument('--save_images', default=None, type=int, help='Save images')
+    parser.add_argument('--save_images', default=0, type=int, help='Save images')
     parser.add_argument('--train_images', default=10, type=int)
     parser.add_argument('--train_iters', default=500, type=int)
     parser.add_argument('--lr', default=0.1, type=float)

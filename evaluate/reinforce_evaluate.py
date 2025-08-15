@@ -47,7 +47,7 @@ def get_args():
 
 
 class JointModel(nn.Module):
-    def __init__(self, args, prompting_model, num_variables, eval_ds, task_tensor, load_model=None):
+    def __init__(self, args, prompting_model, num_variables, eval_ds,  load_model=None): # removed task_tensor
         super().__init__()
         self.prompting_model = prompting_model
         self.num_variables = num_variables
@@ -55,7 +55,7 @@ class JointModel(nn.Module):
 
         self.eval_ds = eval_ds
 
-        self.task_tensor = task_tensor
+        # self.task_tensor = task_tensor
 
         if load_model is not None:
             self.bernoullis = pickle.load(open(load_model, 'rb'))
@@ -206,7 +206,7 @@ def _generate_result_for_canvas(args, model, canvas, premask_pass_indices = None
 
     canvas = torch.einsum('chw->hwc', canvas)
     canvas = torch.clip((canvas * imagenet_std + imagenet_mean) * 255, 0, 255).int()
-    
+
     assert canvas.shape == im_paste.shape, (canvas.shape, im_paste.shape)
     return canvas, im_paste, latents
 
@@ -240,30 +240,30 @@ def evaluate(args):
     # tasks = ["anomaly_detection"]
     tasks = ["edge_detection"]
 
-    if args.task is not None:
-        task = tasks[args.task]
-        mean_activations_file = args.output_dir + '/' + task + '_mean_activations.pkl'
-        with open(mean_activations_file, 'rb') as file:
-            content = pickle.load(file)
-            mean_activations_encoder = content[1]
-            mean_activations_decoder = content[2]
-    
-        enc_inj = mean_activations_encoder.to(args.device)
-        dec_inj = mean_activations_decoder.to(args.device)
-                
-        injection = [enc_inj,dec_inj]
-    else:
-        injection = []
-        for task_element in tasks:
-            mean_activations_file = args.output_dir + '/' + task_element + '_mean_activations.pkl'
-            with open(mean_activations_file, 'rb') as file:
-                content = pickle.load(file)
-                mean_activations_encoder = content[1]
-                mean_activations_decoder = content[2]
-        
-            enc_inj = mean_activations_encoder.to(args.device)
-            dec_inj = mean_activations_decoder.to(args.device)
-            injection.append([enc_inj,dec_inj])
+    # if args.task is not None:
+    #     task = tasks[args.task]
+    #     mean_activations_file = args.output_dir + '/' + task + '_mean_activations.pkl'
+    #     with open(mean_activations_file, 'rb') as file:
+    #         content = pickle.load(file)
+    #         mean_activations_encoder = content[1]
+    #         mean_activations_decoder = content[2]
+    # 
+    #     enc_inj = mean_activations_encoder.to(args.device)
+    #     dec_inj = mean_activations_decoder.to(args.device)
+    #             
+    #     injection = [enc_inj,dec_inj]
+    # else:
+    #     injection = []
+    #     for task_element in tasks:
+    #         mean_activations_file = args.output_dir + '/' + task_element + '_mean_activations.pkl'
+    #         with open(mean_activations_file, 'rb') as file:
+    #             content = pickle.load(file)
+    #             mean_activations_encoder = content[1]
+    #             mean_activations_decoder = content[2]
+    #     
+    #         enc_inj = mean_activations_encoder.to(args.device)
+    #         dec_inj = mean_activations_decoder.to(args.device)
+    #         injection.append([enc_inj,dec_inj])
     
     if args.granularity==0:
         params = 24*16+8*16
@@ -280,7 +280,7 @@ def evaluate(args):
     # eval_ds = ISICDataset(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
     # eval_ds = MVTecDataset(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
     eval_ds = BSDDataset(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
-    rl_model = JointModel(args, model, params, eval_ds, injection, args.load_model)
+    rl_model = JointModel(args, model, params, eval_ds, args.load_model)
     rl_model = rl_model.to(args.device)
 
     rl_model.run_eval(args)
