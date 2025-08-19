@@ -129,10 +129,10 @@ class JointModel(nn.Module):
         else:
             indices = []
 
-        if args.task is None:
-            curr_injection = self.task_tensor[0]
-        else:
-            curr_injection = self.task_tensor
+        # if args.task is None:
+        #     curr_injection = self.task_tensor[0]
+        # else:
+        #     curr_injection = self.task_tensor
         
         loss_holder = []
         for idx in trange(len(self.eval_ds)):
