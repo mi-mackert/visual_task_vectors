@@ -5,10 +5,9 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import numpy as np
 import torch.nn.functional as F
-import torchvision.transforms.functional as TF
 
-class MVTecDataset(Dataset):
-    def __init__(self, root_dir: str = "/content/drive/MyDrive/BachelorArbeit/Datasets_VAT/mvtec/flattened_mvtec", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None,):
+class MSRADataset(Dataset):
+    def __init__(self, root_dir: str = "/work/dlclarge1/mackert-MVTec_mm/workspace/Datasets_VAT/MSRA-B-split", type: str = "train", task=None, image_transform=None, padding: bool = 1, mask_transform = None, query_support_list = None,):
         self.task = task
         self.root_dir = root_dir
         self.type = type
@@ -38,39 +37,26 @@ class MVTecDataset(Dataset):
 
         img_path = os.path.join(self.image_dir, img_name)
         support_path = os.path.join(self.image_dir, support_name)
-        image = self.load_image(img_path)
-        support_image = self.load_image(support_path)
-
+        image = Image.open(img_path)
+        support_image = Image.open(support_path)
 
         if self.task == 0:
-            label_path = os.path.join(self.label_dir, img_name)
-            label = self.load_mask(label_path)
-            label_pil = TF.to_pil_image(label.squeeze(0))
-            support_label_path = os.path.join(self.label_dir, support_name)
-            support_mask = self.load_mask(support_label_path)
-            support_pil = TF.to_pil_image(support_mask.squeeze(0))
-            grid = self.segmentation_grid(support_image, support_pil, image, label_pil)
+            label_path = os.path.join(self.label_dir, img_name.replace('.jpg', '.png'))
+            label = Image.open(label_path)
+            support_label_path = os.path.join(self.label_dir, support_name.replace('.jpg', '.png'))
+            support_mask = Image.open(support_label_path)
+            grid = self.segmentation_grid(support_image, support_mask, image, label)
 
         if self.task == None:
             grid = []
-            label_path = os.path.join(self.label_dir, img_name)
-            label = self.load_mask(label_path)
-            label_pil = TF.to_pil_image(label.squeeze(0))
-            support_label_path = os.path.join(self.label_dir, support_name)
-            support_mask = self.load_mask(support_label_path)
-            support_pil = TF.to_pil_image(support_mask.squeeze(0))
-            grid.append(self.segmentation_grid(support_image, support_pil, image, label_pil))
+            label_path = os.path.join(self.label_dir, img_name.replace('.jpg', '.png'))
+            label = Image.open(label_path)
+            support_label_path = os.path.join(self.label_dir, support_name.replace('.jpg', '.png'))
+            support_mask = Image.open(support_label_path)
+            grid.append(self.segmentation_grid(support_image, support_mask, image, label))
             
         batch = {'query_name': img_name, 'support_name': support_name, 'grid': grid}
         return batch
-    
-    def load_image(self, img_path):
-        image = Image.open(img_path)
-
-        # Convert to RGB if not 3 channels
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        return image
     
     def segmentation_grid(self, support_img, support_mask, query_img, query_mask):
         if self.image_transform:
@@ -105,8 +91,3 @@ class MVTecDataset(Dataset):
             canvas[:, -query_img.shape[1]:, -support_img.shape[2]:] = query_mask
 
         return canvas
-    
-    def load_mask(self, path):
-        mask = Image.open(path).convert('L')  # Grayscale, preserves 8-bit class labels
-        mask_np = np.array(mask).astype(np.uint8)  # Convert to int32 for class indices
-        return torch.from_numpy(mask_np).unsqueeze(0)  # Shape: [1, H, W]

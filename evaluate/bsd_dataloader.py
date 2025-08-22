@@ -99,7 +99,7 @@ class BSDDataset(Dataset):
             raise ValueError(f"Unexpected .mat structure in {mat_path}: {e}")
         mask_struct[mask_struct == 0] = 0
         mask_struct[mask_struct == 1] = 255
-        mask = mask_struct.astype(np.int32)
+        mask = mask_struct.astype(np.uint8)
         mask = Image.fromarray(mask)
         return mask
 
