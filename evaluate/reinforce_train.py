@@ -138,8 +138,8 @@ class JointModel(nn.Module):
                     original_image, generated_result, _ = _generate_result_for_canvas(args, self.prompting_model, canvas, attention_heads=indices, attention_injection=current_injection)
                 
             if args.task == 0:
-                # loss = -1*self.loss_iou(generated_result, original_image) # Segmentation 
-                loss = self.loss_rmse(original_image, generated_result) # Depth estimation
+                loss = -1*self.loss_iou(generated_result, original_image) # Segmentation 
+                # loss = self.loss_rmse(original_image, generated_result) # Depth estimation
             else:
                 if args.task is None:
                     if i%len(self.task_tensor) == 0:
@@ -181,7 +181,7 @@ class JointModel(nn.Module):
                     element = (element - imagenet_mean[:, None, None]) / imagenet_std[:, None, None]
                     canvases.append(element)
 
-        best_checkpoint = float('inf') if args.task == 0 or args.task is None else float('inf') # SWAP -inf to inf if not segmentation
+        best_checkpoint = float('-inf') if args.task == 0 or args.task is None else float('inf') # SWAP -inf to inf if not segmentation
         
         for i in trange(num_itr):
             self.optim.zero_grad()
@@ -238,7 +238,7 @@ class JointModel(nn.Module):
                     best_bernoullis_save_path = os.path.join(args.output_dir, f'bernoullis_{args.task}_{args.granularity}_{self.regularization_strength}_{args.restrict_area}_{args.train_images}_{args.lr}_{args.init}_best.pkl')
                     with open(best_bernoullis_save_path, 'wb') as f:
                         pickle.dump([bernoulli.detach().cpu().numpy() for bernoulli in self.bernoullis], f)
-                elif eval_loss < best_checkpoint and (args.task == 0 or args.task is None):
+                elif eval_loss > best_checkpoint and (args.task == 0 or args.task is None):
                     best_checkpoint = eval_loss
                     best_bernoullis_save_path = os.path.join(args.output_dir, f'bernoullis_{args.task}_{args.granularity}_{self.regularization_strength}_{args.restrict_area}_{args.train_images}_{args.lr}_{args.init}_best.pkl')
                     with open(best_bernoullis_save_path, 'wb') as f:
@@ -286,8 +286,8 @@ class JointModel(nn.Module):
             if args.task is None:
                 loss = self.loss_iou(original_image, generated_result).item()
             elif args.task == 0:
-                # loss = self.loss_iou(original_image, generated_result).item()
-                loss = self.loss_rmse(original_image, generated_result)
+                loss = self.loss_iou(original_image, generated_result).item()
+                # loss = self.loss_rmse(original_image, generated_result)
                 # loss = self.loss_mse(original_image, generated_result)
             else:
                 loss = self.loss_mse(original_image, generated_result)
@@ -330,15 +330,15 @@ def evaluate(args):
     # ds = NYUDepthV2Dataset(type="train", image_transform=image_transform, mask_transform=mask_transform, 
     #                       task=args.task)
     # ds = ISICDataset(type="train", image_transform=image_transform, mask_transform=mask_transform, task=args.task)
-    # ds = MVTecDataset(type="train", mask_transform=mask_transform, image_transform=image_transform, task=args.task)
-    ds = BSDDataset(type="train", image_transform=image_transform, mask_transform=mask_transform, task=args.task)
+    ds = MVTecDataset(type="train", mask_transform=mask_transform, image_transform=image_transform, task=args.task)
+    # ds = BSDDataset(type="train", image_transform=image_transform, mask_transform=mask_transform, task=args.task)
     model = prepare_model(args.ckpt, arch=args.model)
     _ = model.to(args.device)
 
     # tasks = ["depth_estimation"]
     # tasks = ["segmentation"]
-    # tasks = ["anomaly_detection"]
-    tasks = ["edge_detection"]
+    tasks = ["anomaly_detection"]
+    # tasks = ["edge_detection"]
     if args.task is not None:
         task = tasks[args.task]
         mean_activations_file = args.output_dir + '/' + task + '_mean_activations.pkl'

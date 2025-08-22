@@ -47,7 +47,7 @@ def get_args():
 
 
 class JointModel(nn.Module):
-    def __init__(self, args, prompting_model, num_variables, eval_ds,  load_model=None): # removed task_tensor
+    def __init__(self, args, prompting_model, num_variables, eval_ds, task_tensor,  load_model=None): # removed task_tensor
         super().__init__()
         self.prompting_model = prompting_model
         self.num_variables = num_variables
@@ -55,7 +55,7 @@ class JointModel(nn.Module):
 
         self.eval_ds = eval_ds
 
-        # self.task_tensor = task_tensor
+        self.task_tensor = task_tensor
 
         if load_model is not None:
             self.bernoullis = pickle.load(open(load_model, 'rb'))
@@ -129,10 +129,10 @@ class JointModel(nn.Module):
         else:
             indices = []
 
-        # if args.task is None:
-        #     curr_injection = self.task_tensor[0]
-        # else:
-        #     curr_injection = self.task_tensor
+        if args.task is None:
+            curr_injection = self.task_tensor[0]
+        else:
+            curr_injection = self.task_tensor
         
         loss_holder = []
         for idx in trange(len(self.eval_ds)):
@@ -156,8 +156,8 @@ class JointModel(nn.Module):
             if args.task is None:
                 loss = self.loss_iou(original_image, generated_result).item()
             elif args.task == 0 or args.task == 6:
-                # loss = self.loss_iou(original_image, generated_result).item()
-                loss = self.loss_rmse(original_image, generated_result)
+                loss = self.loss_iou(original_image, generated_result).item()
+                # loss = self.loss_rmse(original_image, generated_result)
             else:
                 loss = self.loss_mse(original_image, generated_result)
             loss_holder.append(loss)
@@ -237,33 +237,33 @@ def evaluate(args):
     # tasks = ["segmentation", "lowlight_enhance", "identity", "inpaint", "colorization"] # Pascal 5i tasks
     # tasks = ["depth_estimation"] # NYU tasks
     # tasks = ["segmentation"]
-    # tasks = ["anomaly_detection"]
-    tasks = ["edge_detection"]
+    tasks = ["anomaly_detection"]
+    # tasks = ["edge_detection"]
 
-    # if args.task is not None:
-    #     task = tasks[args.task]
-    #     mean_activations_file = args.output_dir + '/' + task + '_mean_activations.pkl'
-    #     with open(mean_activations_file, 'rb') as file:
-    #         content = pickle.load(file)
-    #         mean_activations_encoder = content[1]
-    #         mean_activations_decoder = content[2]
-    # 
-    #     enc_inj = mean_activations_encoder.to(args.device)
-    #     dec_inj = mean_activations_decoder.to(args.device)
-    #             
-    #     injection = [enc_inj,dec_inj]
-    # else:
-    #     injection = []
-    #     for task_element in tasks:
-    #         mean_activations_file = args.output_dir + '/' + task_element + '_mean_activations.pkl'
-    #         with open(mean_activations_file, 'rb') as file:
-    #             content = pickle.load(file)
-    #             mean_activations_encoder = content[1]
-    #             mean_activations_decoder = content[2]
-    #     
-    #         enc_inj = mean_activations_encoder.to(args.device)
-    #         dec_inj = mean_activations_decoder.to(args.device)
-    #         injection.append([enc_inj,dec_inj])
+    if args.task is not None:
+        task = tasks[args.task]
+        mean_activations_file = args.output_dir + '/' + task + '_mean_activations.pkl'
+        with open(mean_activations_file, 'rb') as file:
+            content = pickle.load(file)
+            mean_activations_encoder = content[1]
+            mean_activations_decoder = content[2]
+    
+        enc_inj = mean_activations_encoder.to(args.device)
+        dec_inj = mean_activations_decoder.to(args.device)
+                
+        injection = [enc_inj,dec_inj]
+    else:
+        injection = []
+        for task_element in tasks:
+            mean_activations_file = args.output_dir + '/' + task_element + '_mean_activations.pkl'
+            with open(mean_activations_file, 'rb') as file:
+                content = pickle.load(file)
+                mean_activations_encoder = content[1]
+                mean_activations_decoder = content[2]
+        
+            enc_inj = mean_activations_encoder.to(args.device)
+            dec_inj = mean_activations_decoder.to(args.device)
+            injection.append([enc_inj,dec_inj])
     
     if args.granularity==0:
         params = 24*16+8*16
@@ -278,8 +278,8 @@ def evaluate(args):
     #                   flipped_order=args.flip, purple=args.purple, iters=args.eval_iters, type="val", task= args.task if args.task is not None else 0)
     # eval_ds = NYUDepthV2Dataset(image_transform=image_transform, mask_transform=mask_transform, task=args.task, type="test")
     # eval_ds = ISICDataset(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
-    # eval_ds = MVTecDataset(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
-    eval_ds = BSDDataset(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
+    eval_ds = MVTecDataset(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
+    # eval_ds = BSDDataset(image_transform=image_transform, mask_transform=mask_transform, type="test", task=args.task)
     rl_model = JointModel(args, model, params, eval_ds, args.load_model)
     rl_model = rl_model.to(args.device)
 
